@@ -1,0 +1,76 @@
+---
+title: "Prediction Assignment"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Goal is to train the model so it could identify Class A activity based on data from sensors.
+
+##Acknowledgment
+
+##Data is provided in WLE dataset - http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har
+##Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+##Ugulino, W.; Ferreira, M.; Velloso, E.; Fuks, H. Virtual Caregiver: Colaboração de Parentes no Acompanhamento de Idosos. Anais do SBSC 2012, IX Simpósio Brasileiro de Sistemas Colaborativos , pp. 43-48. São Paulo, SP: IEEE, 2012. ISBN 978-0-7695-4890-6.
+
+##Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+##Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+###Data and libraries loading
+
+```{r data_loading}
+
+training_raw <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings=c("NA","#DIV/0!",""))
+testing_raw <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", na.strings=c("NA","#DIV/0!",""))
+
+
+
+library("randomForest")
+ 
+
+
+```
+
+###Data cleaning
+####Removing first seven columns and columns with NAs as they are not helpful for prediction
+
+```{r cleaning}
+
+training_set <- subset(training_raw, select = -c(1:7))
+training_set <- training_set[ , colSums(is.na(training_set)) == 0]
+
+```
+
+
+###Explonatory analysis
+```{r explonatory analysis}
+dim(training_set)
+head(training_set)
+summary(training_set)
+barplot(table(training_set$classe), main = "Frequency of activity classes")
+```
+
+###Create Data Partition for model
+```{r datapartition}
+training_subset <- createDataPartition(y=training_set$classe, p=0.70, list=FALSE)
+training_part <- training_set[training_subset, ] 
+testing_part <- training_set[-training_subset, ]
+```
+
+###Random forest 
+```{r training}
+set.seed(1234)
+model_rf <- randomForest(classe~., data = training_part)
+model_rf
+pred_rf <- predict(model_rf, testing_part)
+confusionMatrix(pred_rf, testing_part$classe)
+```
+
+###Application of the model on the test dataset
+```{r application}
+application_testing_raw <- predict(model_rf, testing_raw)
+application_testing_raw
+```
